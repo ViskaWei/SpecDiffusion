@@ -1,0 +1,69 @@
+# Image 2D Diffusion Model Configuration
+# For image data (e.g., MNIST, CIFAR, custom images)
+
+data:
+  file_path: "./data/images.h5"    # Path to your HDF5 data file
+  val_path: null
+  test_path: null
+  num_samples: 50000
+  num_test_samples: 10000
+  
+  # Data loading
+  data_key: "images"
+  label_key: "labels"              # Optional: for conditional generation
+  
+  # Normalization
+  normalize: true
+  normalize_range: "[-1,1]"
+  
+  # Image parameters
+  image_size: 32                   # Image height/width
+  channels: 3                      # Image channels (1 for grayscale, 3 for RGB)
+
+model:
+  type: "2d"                       # Use 2D UNet
+  name: "image_ddpm"
+  
+  # Architecture
+  in_channels: 3
+  out_channels: 3
+  base_channels: 128               # Larger for images
+  channel_mults: [1, 2, 2, 4]
+  num_res_blocks: 2
+  attention_resolutions: [2, 3]    # Attention at multiple levels
+  num_heads: 8
+  dropout: 0.1
+
+diffusion:
+  num_timesteps: 1000
+  beta_start: 0.0001
+  beta_end: 0.02
+  beta_schedule: "cosine"          # Cosine often better for images
+  prediction_type: "epsilon"
+  loss_type: "mse"
+
+train:
+  epochs: 500
+  batch_size: 128
+  precision: "16-mixed"
+  grad_clip: 1.0
+  
+  save: true
+  checkpoint_dir: "./checkpoints"
+  
+  use_ema: true
+  ema_decay: 0.9999
+  
+  sample_interval: 25
+  debug: false
+
+opt:
+  lr: 0.0002
+  type: "adamw"
+  weight_decay: 0.0
+  betas: [0.9, 0.99]
+  
+  lr_sch: "cosine"
+  warmup_epochs: 5
+  T_max: 500
+

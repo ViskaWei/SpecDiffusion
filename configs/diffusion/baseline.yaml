@@ -1,0 +1,78 @@
+# ============================================
+# Diffusion Baseline Configuration
+# ============================================
+# Description: 1D U-Net DDPM Baseline for Stellar Spectra
+# Data: BOSZ 50000 z0 dataset
+
+experiment:
+  id: "SPEC-DIFF-baseline-01"
+  name: "1D U-Net DDPM Baseline for Stellar Spectra"
+  author: "SpecDiffusion"
+  date: "2025-12-03"
+
+# === Data Configuration ===
+# Using BOSZ 50000 z0 dataset
+data:
+  file_path: "$DATA_ROOT/train_100k/dataset.h5"
+  val_path: "$DATA_ROOT/val_1k/dataset.h5"
+  test_path: "$DATA_ROOT/test_1k/dataset.h5"
+  train_size: 10000           # 10K high SNR spectra for training
+  test_size: 1000             # For generation comparison
+  snr_threshold: 50           # Only use high SNR (>50) for training
+  normalization: "minmax"     # minmax, standard, or continuum
+  
+# === Model Configuration - 1D U-Net ===
+model:
+  type: "UNet1D"
+  in_channels: 1              # Single channel spectrum
+  out_channels: 1
+  base_channels: 32           # Reduced for memory efficiency
+  channel_mults: [1, 2, 4, 8] # 32 → 64 → 128 → 256
+  num_res_blocks: 2           # ResBlocks per stage
+  attention_resolutions: [3]  # Only attention at lowest resolution level
+  dropout: 0.1
+  time_emb_dim: 128           # Reduced time embedding dimension
+
+# === DDPM Configuration ===
+diffusion:
+  timesteps: 1000             # T=1000 diffusion steps
+  beta_schedule: "linear"     # linear or cosine
+  beta_start: 0.0001          # 1e-4
+  beta_end: 0.02
+  prediction_type: "epsilon"  # Predict noise (ε-prediction)
+  loss_type: "l2"             # MSE loss
+
+# === Training Configuration ===
+training:
+  epochs: 50
+  batch_size: 32              # Reduced for memory efficiency
+  learning_rate: 0.0001       # 1e-4
+  optimizer: "adamw"
+  weight_decay: 0.01
+  scheduler: "cosine"
+  warmup_epochs: 5
+  ema_decay: 0.9999           # EMA for sampling
+  gradient_clip: 1.0
+  num_workers: 4
+  pin_memory: true
+  
+# === Sampling Configuration ===
+sampling:
+  num_samples: 16             # Samples per generation
+  sample_every_n_epochs: 10   # Sample every N epochs
+  ddpm_steps: 1000            # Full sampling steps
+  
+# === Output Configuration ===
+output:
+  save_dir: "lightning_logs/diffusion"
+  checkpoint_dir: "lightning_logs/diffusion/checkpoints"
+  figures_dir: "lightning_logs/diffusion/img"
+  log_every_n_steps: 50
+  save_top_k: 3               # Keep top 3 checkpoints
+
+# === Device Configuration ===
+device:
+  accelerator: "auto"         # auto, gpu, cpu
+  devices: 1
+  precision: 32               # 32 or 16-mixed
+

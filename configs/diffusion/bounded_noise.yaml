@@ -1,0 +1,73 @@
+# Configuration for Bounded Noise Denoiser (MVP-0.5)
+# Experiment ID: SD-20251204-diff-bounded-01
+
+experiment:
+  id: "SD-20251204-diff-bounded-01"
+  name: "Bounded Noise Multi-Level Denoiser"
+  mvp_source: "MVP-0.5"
+  hypothesis: "H0.2 - Bounded noise denoiser works without going to pure noise"
+
+data:
+  file_path: "$DATA_ROOT/bosz50000_optical_R5000_synthetic_spectra.h5"
+  train_size: 10000
+  test_size: 1000
+  normalization: "minmax"
+  snr_threshold: 50.0
+  sigma_scale: 0.1
+
+noise_model:
+  # y = x0 + λ * σ ⊙ ε, where ε ~ N(0, I), λ ∈ [0, 0.5]
+  formula: "y = x0 + lambda * sigma * epsilon"
+  lambda_values: [0.1, 0.2, 0.3, 0.4, 0.5]
+  lambda_max: 0.5
+
+model:
+  type: "ConditionalUNet1D"
+  in_channels: 1  # x_t (noisy observation)
+  cond_channels: 1  # sigma (per-pixel error vector)
+  out_channels: 1  # prediction (x0 or eps)
+  base_channels: 32
+  channel_mults: [1, 2, 4, 8]
+  num_res_blocks: 2
+  attention_resolutions: [3]
+  dropout: 0.1
+  time_emb_dim: 256
+
+diffusion:
+  prediction_target: "x0"  # "x0" for direct prediction, "eps" for noise prediction
+  loss_type: "l2"
+
+training:
+  epochs: 50
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 0.01
+  warmup_epochs: 5
+  gradient_clip: 1.0
+  ema_decay: 0.9999
+  num_workers: 4
+  pin_memory: true
+
+inference:
+  start_point: "observation"  # Not pure noise!
+  num_steps: 10  # Or 20 for multi-step
+  # Reverse iteration:
+  # 1. ε̂_t = ε_θ(x_t, σ, λ_t)
+  # 2. x̂_0^(t) = x_t - λ_t * σ ⊙ ε̂_t
+  # 3. x_{t-1} = x̂_0^(t) + λ_{t-1} * σ ⊙ ε̂_t
+
+evaluation:
+  metrics:
+    - "MSE(noisy, clean)"
+    - "MSE(denoised, clean)"
+    - "wMSE = mean((Δx/σ)²)"
+    - "improvement = 1 - MSE(denoised)/MSE(noisy)"
+  acceptance_criteria:
+    - "improvement > 30% @ λ=0.5"
+    - "output should not look like pure noise"
+
+output:
+  save_dir: "lightning_logs/diffusion/bounded_noise"
+  figures_dir: "/home/swei20/Physics_Informed_AI/logg/diffusion/img"
+
+

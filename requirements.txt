@@ -1,0 +1,22 @@
+# SpecDiffusion - Diffusion Model Training Framework
+# Core dependencies
+torch>=2.0.0
+lightning>=2.0.0
+numpy>=1.21.0
+h5py>=3.0.0
+pandas>=1.3.0
+scipy>=1.7.0
+einops>=0.6.0
+tqdm>=4.60.0
+
+# Configuration
+omegaconf>=2.3.0
+pyyaml>=6.0
+
+# Visualization (optional)
+matplotlib>=3.5.0
+wandb>=0.15.0
+
+# Acceleration
+accelerate>=0.20.0
+

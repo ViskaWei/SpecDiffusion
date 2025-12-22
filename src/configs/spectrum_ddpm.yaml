@@ -1,0 +1,75 @@
+# Spectrum 1D Diffusion Model Configuration
+# For spectral data like astronomical spectra
+
+data:
+  file_path: "./data/spectra.h5"  # Path to your HDF5 data file
+  val_path: null                   # Optional: separate validation file
+  test_path: null                  # Optional: separate test file
+  num_samples: 32000               # Number of training samples
+  num_test_samples: 2000           # Number of test samples
+  
+  # Data loading
+  data_key: "flux"                 # Key for flux data in HDF5
+  wave_key: "wave"                 # Key for wavelength grid
+  error_key: "error"               # Key for error/uncertainty
+  
+  # Normalization
+  normalize: true
+  normalize_range: "[-1,1]"        # Options: "[-1,1]", "[0,1]", "standard", "none"
+  
+  # Sequence length (number of wavelength bins)
+  seq_len: 7514
+
+model:
+  type: "1d"                       # Use 1D UNet
+  name: "spectrum_ddpm"
+  
+  # Architecture
+  in_channels: 1                   # Single channel for spectra
+  out_channels: 1
+  base_channels: 64                # Base channel count
+  channel_mults: [1, 2, 4, 8]      # Channel multipliers per level
+  num_res_blocks: 2                # Residual blocks per level
+  attention_resolutions: [4]       # Attention at deepest levels
+  num_heads: 4                     # Attention heads
+  dropout: 0.0                     # Dropout rate
+
+diffusion:
+  num_timesteps: 1000              # Total diffusion steps
+  beta_start: 0.0001               # Starting beta value
+  beta_end: 0.02                   # Ending beta value
+  beta_schedule: "linear"          # Options: "linear", "cosine", "quadratic"
+  prediction_type: "epsilon"       # Options: "epsilon", "sample", "v_prediction"
+  loss_type: "mse"                 # Options: "mse", "l1", "huber"
+
+train:
+  epochs: 200                      # Training epochs
+  batch_size: 64                   # Batch size
+  precision: "16-mixed"            # Mixed precision training
+  grad_clip: 1.0                   # Gradient clipping
+  
+  # Checkpointing
+  save: true
+  checkpoint_dir: "./checkpoints"
+  
+  # EMA
+  use_ema: true
+  ema_decay: 0.9999
+  
+  # Sampling during training
+  sample_interval: 20              # Generate samples every N epochs
+  
+  # Debug
+  debug: false
+
+opt:
+  lr: 0.0001                       # Learning rate
+  type: "adamw"                    # Optimizer type
+  weight_decay: 0.0001             # Weight decay
+  betas: [0.9, 0.999]              # Adam betas
+  
+  # Learning rate schedule
+  lr_sch: "cosine"                 # Options: "cosine", "onecycle", "plateau", "none"
+  warmup_epochs: 10                # Warmup epochs
+  T_max: 200                       # For cosine: total epochs
+
